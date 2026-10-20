@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Velocity 15K: Bike Racing</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8F%8D%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="sr-only" href="#menu">Skip to game menu</a>
+<canvas id="game" role="img" aria-label="Motorbike race view. Press I at any time to hear your position, speed and distance remaining."></canvas>
+
+<!-- HUD (visual only; screen readers get the live regions + the I key) -->
+<div id="hud" aria-hidden="true" hidden>
+  <div id="progress"><div id="progressTrack"><span class="pflag pstart">START</span><span class="pflag pfinish">FINISH</span></div></div>
+  <div id="hudTL" class="panel">
+    <div class="row"><span class="lbl">POS</span><span id="hudPos" class="big">1<small>/15</small></span></div>
+    <div class="row"><span class="lbl">TIME</span><span id="hudTime">0:00.0</span></div>
+    <div class="row"><span class="lbl" id="hudLapLbl">LAP</span><span id="hudLap">1/1</span></div>
+  </div>
+  <div id="hudTR" class="panel">
+    <div class="row"><span class="lbl">TO GO</span><span id="hudDist" class="big">15.00<small> km</small></span></div>
+    <div class="row"><span class="lbl">DONE</span><span id="hudDone">0.00 km</span></div>
+  </div>
+  <div id="hudBR" class="panel">
+    <div id="speedo"><span id="hudSpeed">0</span><small>km/h</small></div>
+    <div class="lbl" id="boostLbl">BOOST</div>
+    <div id="boostBar"><div id="boostFill"></div></div>
+    <div id="limitLbl">Limit 100 km/h</div>
+  </div>
+  <div id="cueSound" title="Sound cue">🔊</div>
+</div>
+<div id="speedMini" aria-hidden="true"><span id="smSpeed">0</span><small>km/h</small><span class="mb"><i id="smBoost"></i></span></div>
+<div id="edgeGlow" aria-hidden="true"></div>
+<div id="countdown" aria-hidden="true"></div>
+<div id="fx" aria-hidden="true"></div>
+<div id="offroad" aria-hidden="true" hidden>OFF ROAD: slow!</div>
+
+<button id="pauseBtn" class="iconbtn" aria-label="Pause game (P or Escape)" hidden>❚❚</button>
+
+<!-- Touch controls -->
+<div id="touch" hidden>
+  <div class="tgroup left">
+    <button class="tbtn" data-k="left" aria-label="Steer left">◀</button>
+    <button class="tbtn" data-k="right" aria-label="Steer right">▶</button>
+  </div>
+  <div class="tgroup right">
+    <button class="tbtn brake" data-k="down" aria-label="Brake">BRAKE</button>
+    <button class="tbtn gas" data-k="up" aria-label="Accelerate">GAS</button>
+  </div>
+  <button id="oneBtn" class="tbtn one" data-k="one" aria-label="Go: hold to accelerate, steering is automatic" hidden>HOLD<br>TO GO</button>
+</div>
+
+<!-- Main menu -->
+<section id="menu" class="overlay" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+  <div class="card">
+    <h1 id="menuTitle"><span class="logo">VELOCITY</span> <span class="logo2">15K</span></h1>
+    <p class="tag">15 riders · sprint or laps · world cities · boosts give +20 km/h</p>
+    <div class="btns">
+      <button id="btnStart" class="primary">Race setup &amp; start</button>
+      <button id="btnQuick">Quick race (last setup)</button>
+      <button id="btnGarage">Garage: choose your bike</button>
+      <button id="btnSettings">Settings &amp; accessibility</button>
+      <button id="btnHelp">How to play</button>
+    </div>
+    <p class="small" id="menuAssist"></p>
+  </div>
+</section>
+
+<!-- Race setup -->
+<section id="setup" class="overlay" role="dialog" aria-modal="true" aria-labelledby="setupTitle" hidden>
+  <div class="card wide">
+    <h2 id="setupTitle">Race setup</h2>
+    <form id="setupForm" onsubmit="return false">
+      <label>Race type
+        <select id="sRace">
+          <option value="sprint">Sprint: 15 km point-to-point</option>
+          <option value="1">Circuit: 1 lap</option>
+          <option value="3">Circuit: 3 laps</option>
+          <option value="5">Circuit: 5 laps</option>
+          <option value="10">Circuit: 10 laps</option>
+        </select></label>
+      <label>Location
+        <select id="sLoc"></select></label>
+      <p id="locDesc" class="small" aria-live="polite"></p>
+      <label>Traffic
+        <select id="sTraffic">
+          <option value="none">None</option>
+          <option value="light">Light</option>
+          <option value="medium">Medium</option>
+          <option value="heavy">Heavy</option>
+        </select></label>
+      <p class="small">Traffic means cars, taxis, trucks, buses and auto-rickshaws in the lanes. Hitting one slows you down.</p>
+      <div class="bikeSummary"><img id="setupBikeImg" alt="" width="130" height="80"><div><b id="setupBikeName"></b><br><span id="setupBikeStats" class="small"></span></div></div>
+    </form>
+    <div class="btns">
+      <button id="btnGo" class="primary">Start race</button>
+      <button id="btnSetupGarage">Change bike (Garage)</button>
+      <button class="back">Back</button>
+    </div>
+  </div>
+</section>
+
+<!-- Garage -->
+<section id="garage" class="overlay" role="dialog" aria-modal="true" aria-labelledby="garageTitle" hidden>
+  <div class="card xwide">
+    <h2 id="garageTitle">Garage</h2>
+    <div class="garageTop">
+      <div class="preview"><canvas id="gPreviewSide" width="520" height="300" role="img" aria-label="Side view of selected bike"></canvas><canvas id="gPreviewBack" width="160" height="210" role="img" aria-label="Rear view of selected bike"></canvas></div>
+      <div class="gInfo">
+        <h3 id="gName"></h3>
+        <p id="gDesc" class="small"></p>
+        <dl id="gStats" class="stats"></dl>
+        <div class="lbl" id="colorLbl">COLOUR</div>
+        <div id="gColors" role="radiogroup" aria-labelledby="colorLbl" class="swatches"></div>
+      </div>
+    </div>
+    <div id="gBikes" role="radiogroup" aria-label="Motorbike type" class="bikegrid"></div>
+    <p class="small">Use the arrow keys to move between bikes and colours. Every bike gets +20 km/h when boosted.</p>
+    <div class="btns row"><button class="back primary" id="btnGarageDone">Ride this bike</button></div>
+    <div id="gLive" class="sr-only" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- Help -->
+<section id="help" class="overlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <div class="card wide">
+    <h2 id="helpTitle">How to play</h2>
+    <ul class="help">
+      <li><kbd>↑</kbd>/<kbd>W</kbd>/<kbd>Space</kbd> accelerate · <kbd>↓</kbd>/<kbd>S</kbd> brake · <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> steer</li>
+      <li><kbd>P</kbd>/<kbd>Esc</kbd> pause · <kbd>M</kbd> sound on/off · <kbd>H</kbd> high contrast · <kbd>I</kbd> announce status (screen readers)</li>
+      <li>Ride over the glowing <b>blue lightning orbs</b> to boost: your bike's limit goes up by <b>20 km/h</b> (a standard 100 km/h bike reaches 120) for a few seconds, depending on the bike. Boosts stack. Rivals grab them too, and an orb comes back a few seconds after someone takes it.</li>
+      <li><b>Garage:</b> pick from 10 bike types (scooter up to superbike) and a colour. Each bike has its own top speed, acceleration, handling, boost time and off-road grip.</li>
+      <li><b>Race types:</b> a 15 km sprint, or a circuit with 1, 3, 5 or 10 laps (2.4 km per lap). Lap times are shown at the end. <b>Traffic:</b> overtake the cars, buses and autos. Hitting one slows you down.</li>
+      <li>Stay on the tarmac. Grass, sand and kerbs slow you to 45 km/h, and hitting trees, signs or buildings nearly stops you.</li>
+      <li>Bumping into a rider from behind slows you down, so steer round them to overtake.</li>
+      <li><b>Auto-steer</b> assist steers for you (lines up boosts and avoids riders). You handle the throttle. <b>One-button</b> mode steers for you too: hold any key or the big button to go. Add <b>Auto-accelerate</b> and you don't need to press anything.</li>
+      <li>Time scale: speeds and distances are real (15 km, km/h), but game time runs 3× faster than real time, so a full 15 km race at 100 km/h shows about 9:00 on the race clock and takes about 3 minutes. You can slow everything further in Settings (game speed).</li>
+    </ul>
+    <div class="btns"><button class="back primary">Back</button></div>
+  </div>
+</section>
+
+<!-- Settings -->
+<section id="settings" class="overlay" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden>
+  <div class="card wide">
+    <h2 id="setTitle">Settings &amp; accessibility</h2>
+    <form id="setForm" onsubmit="return false">
+      <label>Steering assist
+        <select id="sAssist">
+          <option value="off">Off: steer yourself</option>
+          <option value="auto">Auto-steer: you control throttle and brake</option>
+          <option value="one">One-button: hold any key or button to go</option>
+        </select></label>
+      <label class="chk"><input type="checkbox" id="sAutoAccel"> Auto-accelerate (throttle always on unless braking)</label>
+      <label>Game speed
+        <select id="sSpeed">
+          <option value="0.5">50% (slowest)</option>
+          <option value="0.75">75%</option>
+          <option value="1">100% (normal)</option>
+          <option value="1.25">125% (fast)</option>
+        </select></label>
+      <label>Rival difficulty
+        <select id="sDiff">
+          <option value="easy">Easy</option>
+          <option value="normal">Normal</option>
+          <option value="hard">Hard</option>
+        </select></label>
+      <label class="chk"><input type="checkbox" id="sSound"> Sound effects (on-screen cues are always shown)</label>
+      <label class="chk"><input type="checkbox" id="sHC"> High-contrast mode</label>
+      <label class="chk"><input type="checkbox" id="sRM"> Reduced motion (no shake, speed lines or flashes)</label>
+      <label class="chk"><input type="checkbox" id="sAnnounce"> Screen-reader announcements (position, boosts, distance)</label>
+      <label>On-screen touch controls
+        <select id="sTouch">
+          <option value="auto">Automatic (touch devices)</option>
+          <option value="on">Always show</option>
+          <option value="off">Hide</option>
+        </select></label>
+    </form>
+    <div class="btns"><button class="back primary">Done</button></div>
+  </div>
+</section>
+
+<!-- Pause -->
+<section id="pause" class="overlay dim" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+  <div class="card">
+    <h2 id="pauseTitle">Paused</h2>
+    <p id="pauseStatus" class="small"></p>
+    <div class="btns">
+      <button id="btnResume" class="primary">Resume</button>
+      <button id="btnPSettings">Settings &amp; accessibility</button>
+      <button id="btnRestart">Restart race</button>
+      <button id="btnQuit">Quit to menu</button>
+    </div>
+  </div>
+</section>
+
+<!-- Results -->
+<section id="results" class="overlay dim" role="dialog" aria-modal="true" aria-labelledby="resTitle" hidden>
+  <div class="card wide">
+    <h2 id="resTitle">Race results</h2>
+    <p id="resSummary" class="summary"></p>
+    <div class="tablewrap"><table id="resTable"><caption class="sr-only">Final standings</caption>
+      <thead><tr><th scope="col">Pos</th><th scope="col">Rider</th><th scope="col">Bike</th><th scope="col">Race time</th><th scope="col">Gap</th><th scope="col">Best lap</th><th scope="col">Boosts</th></tr></thead>
+      <tbody></tbody></table></div>
+    <div id="lapWrap" hidden><h3>Your lap times</h3><ol id="lapList" class="laps"></ol></div>
+    <div class="btns">
+      <button id="btnAgain" class="primary">Race again</button>
+      <button id="btnResSetup">Change race setup</button>
+      <button id="btnMenu">Main menu</button>
+    </div>
+  </div>
+</section>
+
+<div id="liveP" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="liveA" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+<script src="game.js"></script>
+</body>
+</html>

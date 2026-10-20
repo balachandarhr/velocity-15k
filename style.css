@@ -1,0 +1,161 @@
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:#0b1020;color:#f4f6ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}
+canvas#game{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;display:block;image-rendering:auto}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.sr-only:focus{position:fixed!important;top:8px;left:8px;width:auto;height:auto;clip:auto;background:#fff;color:#000;padding:8px;z-index:99}
+[hidden]{display:none!important}
+
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5;font-variant-numeric:tabular-nums}
+.panel{position:absolute;background:rgba(8,12,30,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:8px 14px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.panel .row{display:flex;align-items:baseline;gap:10px;justify-content:space-between}
+.lbl{font-size:12px;letter-spacing:.12em;color:#9fb3ff;font-weight:700}
+.big{font-size:30px;font-weight:800;line-height:1.1}
+.big small{font-size:15px;font-weight:600;opacity:.8}
+#hudTL{left:12px;top:46px;min-width:150px}
+#hudTR{right:12px;top:46px;min-width:170px;text-align:right}
+#hudBR{right:12px;bottom:12px;min-width:190px;text-align:center}
+#speedo{font-size:52px;font-weight:900;line-height:1}
+#speedo small{font-size:16px;margin-left:4px;opacity:.8}
+#boostBar{height:14px;border-radius:7px;background:rgba(255,255,255,.15);overflow:hidden;margin-top:4px;border:1px solid rgba(255,255,255,.3)}
+#boostFill{height:100%;width:0;background:linear-gradient(90deg,#29d3ff,#7b5cff,#ff4fd8);transition:width .1s linear}
+#limitLbl{font-size:12px;margin-top:4px;color:#c9d4ff}
+#cueSound{position:absolute;left:12px;bottom:12px;font-size:22px;opacity:0}
+#progress{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:min(70vw,720px);height:26px}
+#progressTrack{position:absolute;left:0;right:0;top:9px;height:8px;border-radius:4px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4)}
+.pflag{position:absolute;top:12px;font-size:9px;letter-spacing:.1em;color:#dfe6ff;opacity:.8}
+.pstart{left:0}.pfinish{right:0}
+.dot{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:1px solid rgba(0,0,0,.6)}
+.dot.me{width:18px;height:18px;margin:-9px 0 0 -9px;border:3px solid #fff;z-index:2;box-shadow:0 0 8px #fff}
+
+#edgeGlow{position:fixed;inset:0;pointer-events:none;z-index:4;box-shadow:inset 0 0 0 0 rgba(41,211,255,0);transition:box-shadow .25s}
+body.boosting #edgeGlow{box-shadow:inset 0 0 60px 12px rgba(41,211,255,.65)}
+body.bumped #edgeGlow{box-shadow:inset 0 0 60px 14px rgba(255,60,60,.7);transition:none}
+#countdown{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);font-size:min(28vw,180px);font-weight:900;z-index:6;pointer-events:none;color:#fff;text-shadow:0 0 30px rgba(0,0,0,.6),0 6px 0 #ff3d6e}
+#fx{position:fixed;left:50%;top:26%;transform:translate(-50%,-50%);font-size:min(10vw,64px);font-weight:900;z-index:6;pointer-events:none;opacity:0;letter-spacing:.04em;text-shadow:0 4px 18px rgba(0,0,0,.6)}
+#fx.show{animation:fxpop 1.1s ease-out forwards}
+#fx.boost{color:#5fe6ff}#fx.bump{color:#ff6b6b}#fx.info{color:#ffe066}
+@keyframes fxpop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-60%) scale(1)}}
+#offroad{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);background:#ffb300;color:#000;font-weight:900;padding:6px 14px;border-radius:8px;z-index:6;pointer-events:none;font-size:18px}
+
+/* Buttons & overlays */
+button{font:inherit;cursor:pointer}
+.iconbtn{position:fixed;top:44px;left:50%;transform:translateX(-50%);z-index:8;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(8,12,30,.6);color:#fff;font-size:15px}
+.overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;background:radial-gradient(ellipse at center,rgba(5,8,25,.35),rgba(5,8,25,.8))}
+.overlay.dim{background:rgba(5,8,25,.72)}
+.card{background:rgba(14,20,48,.92);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:24px 28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:94vh;overflow:auto;-webkit-user-select:text;user-select:text}
+.card.wide{max-width:720px}
+h1{margin:0 0 6px;font-size:44px;line-height:1;font-style:italic;letter-spacing:.02em}
+.logo{background:linear-gradient(90deg,#29d3ff,#7b5cff,#ff4fd8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo2{color:#ffd23f}
+h2{margin:0 0 12px}
+.tag{color:#c9d4ff;margin:0 0 18px}
+.small{font-size:13px;color:#b9c4ee}
+.summary{font-size:18px}
+.btns{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.btns button{padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:17px;font-weight:600}
+.btns button.primary{background:linear-gradient(90deg,#ff3d6e,#ff8a3d);border:none;font-size:19px}
+.btns button:hover{filter:brightness(1.15)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #ffd23f;outline-offset:2px}
+form label{display:block;margin:10px 0;font-weight:600}
+form select{display:block;width:100%;margin-top:4px;padding:9px;border-radius:10px;font:inherit;font-size:16px;background:#1b2550;color:#fff;border:1px solid rgba(255,255,255,.3)}
+form .chk{display:flex;gap:10px;align-items:center;font-weight:500}
+form .chk input{width:22px;height:22px;flex:none}
+ul.help{padding-left:18px;line-height:1.55}
+kbd{display:inline-block;padding:1px 6px;border-radius:5px;background:#2a3670;border:1px solid #556;font-size:13px;font-family:inherit}
+.tablewrap{max-height:40vh;overflow:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid rgba(255,255,255,.1)}
+th{color:#9fb3ff;font-size:13px;letter-spacing:.06em}
+tr.me td{background:rgba(255,210,63,.18);font-weight:800}
+.sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;vertical-align:-1px;border:1px solid #000}
+
+/* Touch */
+#touch{position:fixed;inset:auto 0 0 0;z-index:7;pointer-events:none;height:0}
+.tgroup{position:fixed;bottom:16px;display:flex;gap:14px;pointer-events:auto}
+.tgroup.left{left:16px}.tgroup.right{right:16px;bottom:170px}
+.tbtn{width:84px;height:84px;border-radius:22px;border:3px solid rgba(255,255,255,.7);background:rgba(10,15,40,.5);color:#fff;font-size:28px;font-weight:900;touch-action:none;-webkit-tap-highlight-color:transparent}
+.tbtn.gas{background:rgba(40,180,90,.55);font-size:18px}
+.tbtn.brake{background:rgba(220,60,60,.5);font-size:15px}
+.tbtn.on{background:rgba(255,255,255,.45)}
+.tbtn.one{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);width:160px;height:110px;font-size:20px;background:rgba(40,180,90,.6);pointer-events:auto}
+
+/* High contrast */
+body.hc .panel{background:#000;border:3px solid #fff;backdrop-filter:none}
+body.hc .lbl{color:#ffe600}
+body.hc #boostFill{background:#00ffff}
+body.hc #boostBar{background:#333;border:2px solid #fff}
+body.hc .card{background:#000;border:3px solid #fff}
+body.hc .btns button{background:#000;border:3px solid #fff}
+body.hc .btns button.primary{background:#ffe600;color:#000}
+body.hc #progressTrack{background:#000;border:2px solid #fff}
+body.hc .dot{border:2px solid #fff}
+body.hc .tbtn{background:#000;border-color:#ffe600;color:#ffe600}
+body.hc #countdown{color:#ffe600;text-shadow:0 0 0 #000,4px 4px 0 #000}
+body.hc #fx{text-shadow:3px 3px 0 #000}
+body.hc #fx.boost{color:#00ffff}
+body.hc.boosting #edgeGlow{box-shadow:inset 0 0 0 10px #00ffff}
+body.hc.bumped #edgeGlow{box-shadow:inset 0 0 0 10px #ff0000}
+/* Reduced motion */
+body.rm *{animation-duration:.001s!important;transition:none!important}
+body.rm #fx.show{animation:none;opacity:1}
+@media (max-width:640px){
+  .big{font-size:22px}#speedo{font-size:38px}#hudTL{min-width:110px;top:42px}#hudTR{min-width:120px;top:42px}#hudBR{min-width:140px}
+  #hudBR{bottom:auto;top:132px;right:12px}
+  .tbtn{width:74px;height:74px}.tgroup.right{bottom:16px;flex-direction:column-reverse}
+  h1{font-size:34px}
+  .iconbtn{left:12px;top:132px;transform:none}
+}
+
+.card.xwide{max-width:980px}
+.bikeSummary{display:flex;gap:14px;align-items:center;background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px;margin-top:8px}
+.bikeSummary img{background:rgba(255,255,255,.08);border-radius:8px}
+.garageTop{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.preview{display:flex;gap:8px;align-items:flex-end;background:radial-gradient(ellipse at center,#2a3670,#0e1430);border-radius:14px;padding:8px;flex:1 1 360px;justify-content:center}
+.preview canvas{max-width:100%;height:auto}
+#gPreviewSide{width:min(100%,340px)}#gPreviewBack{width:96px}
+.gInfo{flex:1 1 260px}
+.gInfo h3{margin:4px 0}
+.stats{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;margin:8px 0;font-size:14px}
+.stats dt{color:#9fb3ff;font-weight:700;font-size:12px;letter-spacing:.06em}
+.stats .bar{height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}
+.stats .bar i{display:block;height:100%;background:linear-gradient(90deg,#29d3ff,#ff4fd8)}
+.stats dd{margin:0;font-variant-numeric:tabular-nums}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.swatch{width:36px;height:36px;border-radius:50%;border:3px solid rgba(255,255,255,.35);padding:0}
+.swatch[aria-checked="true"]{border-color:#fff;box-shadow:0 0 0 3px #ffd23f}
+.bikegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+.bikecard{background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.18);border-radius:14px;color:#fff;padding:6px;text-align:center;font-size:14px;font-weight:700}
+.bikecard img{width:100%;height:auto;display:block}
+.bikecard small{display:block;font-weight:500;color:#b9c4ee;font-size:12px}
+.bikecard[aria-checked="true"]{border-color:#ffd23f;background:rgba(255,210,63,.15)}
+.btns.row{flex-direction:row;justify-content:flex-end}
+ol.laps{list-style:none;padding:0;columns:3;font-variant-numeric:tabular-nums;margin:4px 0 0}
+ol.laps li.best{color:#ffd23f;font-weight:800}
+body.hc .bikecard{background:#000;border:3px solid #fff}
+body.hc .bikecard[aria-checked="true"]{border-color:#ffe600;background:#222}
+body.hc .preview{background:#111}
+@media (max-width:640px){.bikegrid{grid-template-columns:repeat(2,1fr)}.card{padding:16px}}
+.stats .bar{display:block;width:100%;min-width:60px}
+.preview{flex-wrap:wrap}
+@media (max-width:640px){#gPreviewSide{width:72%}#gPreviewBack{width:22%}.preview{flex-wrap:nowrap;padding:4px}.garageTop{gap:8px}}
+
+.overlay{height:100vh;height:100dvh}
+/* short landscape phones (Android landscape): controls at the bottom corners, compact HUD */
+@media (max-height:500px) and (orientation:landscape){
+  .tgroup.right{bottom:12px;right:12px;flex-direction:row}
+  .tgroup.left{bottom:12px;left:12px}
+  .tbtn{width:72px;height:72px}
+  #hudBR{bottom:auto;top:44px;right:50%;transform:translateX(50%);min-width:150px;padding:4px 10px;display:none}
+  #hudTL,#hudTR{top:36px;padding:4px 10px}
+  .big{font-size:20px}
+  #hudTR .row:first-child .big::after{content:''}
+  .iconbtn{top:36px;width:38px;height:38px}
+  #speedMini{display:block}
+}
+#speedMini{display:none;position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:6;pointer-events:none;background:rgba(8,12,30,.6);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:2px 12px;font-weight:900;font-size:26px;font-variant-numeric:tabular-nums;color:#fff}
+#speedMini small{font-size:12px;opacity:.85;margin-left:3px}
+#speedMini .mb{display:block;height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}
+#speedMini .mb i{display:block;height:100%;width:0;background:linear-gradient(90deg,#29d3ff,#ff4fd8)}
+body.hc #speedMini{background:#000;border:2px solid #fff}
+@media (max-height:500px) and (orientation:landscape){#speedMini{display:block}}
